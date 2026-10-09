@@ -59,7 +59,17 @@ public class ConsumidorNotificaciones {
 			String email = evento.path("customerEmail").asText("");
 			String nombre = evento.path("customerName").asText("");
 			int total = evento.path("total").asInt(0);
-			servicio.notificarPedido(orderId, email, nombre, total);
+			java.util.List<ServicioNotificaciones.ItemNotificado> items = new java.util.ArrayList<>();
+			JsonNode lineas = evento.path("items");
+			if (lineas.isArray()) {
+				for (JsonNode linea : lineas) {
+					items.add(new ServicioNotificaciones.ItemNotificado(
+						linea.path("name").asText("Producto"),
+						linea.path("quantity").asInt(1),
+						linea.path("price").asInt(0)));
+				}
+			}
+			servicio.notificarPedido(orderId, email, nombre, total, items);
 			log.info("Notificación procesada para {}", orderId);
 		} catch (Exception ex) {
 			log.warn("Evento pedido.creado inválido: {}", ex.getMessage());
