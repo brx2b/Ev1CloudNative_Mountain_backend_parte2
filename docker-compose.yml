@@ -1,0 +1,117 @@
+version: "3.9"
+
+# Backend-2 (EC2 10.0.146.240): notificaciones, carrito y envíos.
+# Consumen RabbitMQ del backend-1 (RABBITMQ_HOST=10.0.128.111).
+# Puertos (cada MS escucha en 8080 dentro de su contenedor):
+#   8084 -> servicio-notificaciones
+#   8085 -> servicio-carrito
+#   8086 -> servicio-envios
+#
+# El entrypoint público es el nginx del EC2 frontend, que rutea
+# /api/notifications, /api/cart y /api/shipments a estos puertos.
+# En el SG solo abrir 8084-8086 desde el SG del frontend (nada al mundo).
+#
+# Memoria: heaps chicos (-Xms96m -Xmx256m) porque el host es t3.small
+# compartido por 3 JVM.
+#
+services:
+  servicio-notificaciones:
+    build:
+      context: ./servicio-notificaciones
+    container_name: pedidos360-servicio-notificaciones
+    restart: unless-stopped
+    ports:
+      - "8084:8080"
+    environment:
+      SERVER_PORT: "8080"
+      JAVA_OPTS: "${JAVA_OPTS_NOTIFICACIONES:--Xms96m -Xmx256m}"
+      CORS_ALLOWED_ORIGINS: "${FRONTEND_ORIGIN:-http://localhost:5173}"
+      JWT_ENABLED: "true"
+      JWT_JWKS_URI: "https://login.microsoftonline.com/${AZURE_TENANT_ID}/discovery/v2.0/keys"
+      JWT_ISSUER_URI: "https://login.microsoftonline.com/${AZURE_TENANT_ID}/v2.0"
+      JWT_AUDIENCES: "${AZURE_API_AUDIENCE}"
+      JWT_REQUIRED_SCOPES: "orders.write"
+      JWT_REQUIRED_ROLES: ""
+      JWT_LOCAL_ENABLED: "false"
+      JWT_LOCAL_SECRET: ""
+      JWT_LOCAL_ISSUER: "pedidos360-usuarios"
+      JWT_LOCAL_AUDIENCE: "pedidos360-api"
+      JWT_LOCAL_REQUIRED_SCOPE: "orders.write"
+      RABBITMQ_HOST: "${RABBITMQ_HOST:-10.0.128.111}"
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: "${RABBITMQ_USER:-pedidos360}"
+      RABBITMQ_PASS: "${RABBITMQ_PASS:-cambiar-en-produccion}"
+      SMTP_HOST: "${SMTP_HOST:-}"
+      SMTP_PORT: "${SMTP_PORT:-587}"
+      SMTP_USER: "${SMTP_USER:-}"
+      SMTP_PASS: "${SMTP_PASS:-}"
+      SMTP_FROM: "${SMTP_FROM:-no-reply@summitlab.cl}"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  servicio-carrito:
+    build:
+      context: ./servicio-carrito
+    container_name: pedidos360-servicio-carrito
+    restart: unless-stopped
+    ports:
+      - "8085:8080"
+    environment:
+      SERVER_PORT: "8080"
+      JAVA_OPTS: "${JAVA_OPTS_CARRITO:--Xms96m -Xmx256m}"
+      CORS_ALLOWED_ORIGINS: "${FRONTEND_ORIGIN:-http://localhost:5173}"
+      JWT_ENABLED: "true"
+      JWT_JWKS_URI: "https://login.microsoftonline.com/${AZURE_TENANT_ID}/discovery/v2.0/keys"
+      JWT_ISSUER_URI: "https://login.microsoftonline.com/${AZURE_TENANT_ID}/v2.0"
+      JWT_AUDIENCES: "${AZURE_API_AUDIENCE}"
+      JWT_REQUIRED_SCOPES: "orders.write"
+      JWT_REQUIRED_ROLES: ""
+      JWT_LOCAL_ENABLED: "false"
+      JWT_LOCAL_SECRET: ""
+      JWT_LOCAL_ISSUER: "pedidos360-usuarios"
+      JWT_LOCAL_AUDIENCE: "pedidos360-api"
+      JWT_LOCAL_REQUIRED_SCOPE: "orders.write"
+      RABBITMQ_HOST: "${RABBITMQ_HOST:-10.0.128.111}"
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: "${RABBITMQ_USER:-pedidos360}"
+      RABBITMQ_PASS: "${RABBITMQ_PASS:-cambiar-en-produccion}"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  servicio-envios:
+    build:
+      context: ./servicio-envios
+    container_name: pedidos360-servicio-envios
+    restart: unless-stopped
+    ports:
+      - "8086:8080"
+    environment:
+      SERVER_PORT: "8080"
+      JAVA_OPTS: "${JAVA_OPTS_ENVIOS:--Xms96m -Xmx256m}"
+      CORS_ALLOWED_ORIGINS: "${FRONTEND_ORIGIN:-http://localhost:5173}"
+      JWT_ENABLED: "true"
+      JWT_JWKS_URI: "https://login.microsoftonline.com/${AZURE_TENANT_ID}/discovery/v2.0/keys"
+      JWT_ISSUER_URI: "https://login.microsoftonline.com/${AZURE_TENANT_ID}/v2.0"
+      JWT_AUDIENCES: "${AZURE_API_AUDIENCE}"
+      JWT_REQUIRED_SCOPES: "orders.write"
+      JWT_REQUIRED_ROLES: ""
+      JWT_LOCAL_ENABLED: "false"
+      JWT_LOCAL_SECRET: ""
+      JWT_LOCAL_ISSUER: "pedidos360-usuarios"
+      JWT_LOCAL_AUDIENCE: "pedidos360-api"
+      JWT_LOCAL_REQUIRED_SCOPE: "orders.write"
+      RABBITMQ_HOST: "${RABBITMQ_HOST:-10.0.128.111}"
+      RABBITMQ_PORT: "5672"
+      RABBITMQ_USER: "${RABBITMQ_USER:-pedidos360}"
+      RABBITMQ_PASS: "${RABBITMQ_PASS:-cambiar-en-produccion}"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
