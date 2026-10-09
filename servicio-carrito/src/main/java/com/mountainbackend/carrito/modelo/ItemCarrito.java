@@ -5,5 +5,6 @@ public record ItemCarrito(
 		long productId,
 		String name,
 		int price,
-		int quantity) {
+		int quantity,
+		String image) {
 }

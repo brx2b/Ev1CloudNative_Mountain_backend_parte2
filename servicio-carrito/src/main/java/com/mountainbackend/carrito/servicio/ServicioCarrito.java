@@ -36,10 +36,12 @@ public class ServicioCarrito {
 				new ItemCarrito(idProducto,
 					solicitud.name() != null ? solicitud.name() : "",
 					solicitud.price() != null ? solicitud.price() : 0,
-					cantidad),
+					cantidad,
+					solicitud.image()),
 				(anterior, nuevo) -> new ItemCarrito(anterior.productId(), anterior.name(),
 					nuevo.price() > 0 ? nuevo.price() : anterior.price(),
-					anterior.quantity() + nuevo.quantity()));
+					anterior.quantity() + nuevo.quantity(),
+					nuevo.image() != null ? nuevo.image() : anterior.image()));
 		return armar(email);
 	}
 
@@ -53,7 +55,7 @@ public class ServicioCarrito {
 		} else {
 			ItemCarrito anterior = carrito.get(productId);
 			carrito.put(productId, new ItemCarrito(anterior.productId(), anterior.name(),
-				anterior.price(), quantity));
+				anterior.price(), quantity, anterior.image()));
 		}
 		return armar(email);
 	}

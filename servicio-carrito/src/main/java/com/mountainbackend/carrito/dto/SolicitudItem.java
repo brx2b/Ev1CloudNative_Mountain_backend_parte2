@@ -6,5 +6,6 @@ public record SolicitudItem(
 		Long id,
 		String name,
 		Integer price,
-		Integer quantity) {
+		Integer quantity,
+		String image) {
 }
