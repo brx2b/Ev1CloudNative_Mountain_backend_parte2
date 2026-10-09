@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: validador
+  main:
+    # La Lambda no es un servidor: no debe intentar arrancar Tomcat ni el ciclo
+    # de vida de una aplicacion web.
+    web-application-type: none
+    banner-mode: "off"
+
+app:
+  security:
+    jwt:
+      providers:
+        # Acceso Azure Entra ID (Pedidos360 / SummitLab).
+        - name: azure
+          jwk-set-uri: https://login.microsoftonline.com/a8cd48ca-7971-442d-ad69-43a5db8895d3/discovery/v2.0/keys
+          issuers:
+            - https://login.microsoftonline.com/a8cd48ca-7971-442d-ad69-43a5db8895d3/v2.0
+          # Azure emite el aud como GUID pelado: se aceptan ambas formas.
+          audiences:
+            - 4c70b2d5-20b5-405e-a235-7fd53adad4e7
+            - api://4c70b2d5-20b5-405e-a235-7fd53adad4e7
+
+        # Acceso AWS Cognito (pendiente: crear el User Pool y completar IDs).
+        # - name: cognito
+        #   jwk-set-uri: https://cognito-idp.us-east-1.amazonaws.com/TU_USER_POOL_ID/.well-known/jwks.json
+        #   issuers:
+        #     - https://cognito-idp.us-east-1.amazonaws.com/TU_USER_POOL_ID
+        #   audiences:
+        #     - TU_APP_CLIENT_ID
+
+logging:
+  level:
+    # Autorizacion: un nivel bajo es un riesgo, no solo ruido.
+    org.springframework.security: INFO
+    com.lambda.validador: INFO
+    # AWSLambdaUtils registra el evento ENTERO en INFO, y el evento del authorizer
+    # lleva el token en claro dos veces: en "identitySource" y en
+    # "headers.authorization". Con este nivel, cada peticion deja un JWT
+    # reutilizable escrito en CloudWatch Logs.
+    org.springframework.cloud.function: WARN

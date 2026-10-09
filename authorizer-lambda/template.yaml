@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Lambda authorizer REQUEST para el API Gateway backend-api de Pedidos360.
+  Valida JWT de Azure Entra ID (y Cognito cuando se configure) y responde
+  {"isAuthorized": true|false}. No crea API propia: se adjunta a las rutas
+  existentes del backend-api desde la consola.
+
+Parameters:
+  TtlCache:
+    Type: Number
+    Default: 300
+    MinValue: 0
+    MaxValue: 3600
+    Description: Segundos que API Gateway cachea la decisión del authorizer.
+
+Resources:
+  FuncionAuthorizer:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-authorizer'
+      CodeUri: target/function.jar
+      Runtime: java21
+      Handler: com.lambda.validador.AuthorizerHandler::handleRequest
+      MemorySize: 1024
+      Timeout: 10
+      Architectures: [arm64]
+      Environment:
+        Variables:
+          TZ: UTC
+      # Sin VPC: la función necesita salir a internet para los JWK Sets.
+
+  PermisoApiGateway:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt FuncionAuthorizer.Arn
+      Principal: apigateway.amazonaws.com
+
+Outputs:
+  AuthorizerArn:
+    Description: ARN de la función authorizer (para adjuntar en el backend-api).
+    Value: !GetAtt FuncionAuthorizer.Arn

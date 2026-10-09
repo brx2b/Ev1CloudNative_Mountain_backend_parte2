@@ -7,6 +7,7 @@ Microservicios que corren en el EC2 backend-2 (`10.0.146.240`):
 | servicio-notificaciones | 8084 | Email por pedido + `POST /notifications/enviar` directo (Postman) |
 | servicio-carrito | 8085 | Carrito persistente por usuario (`/cart`) |
 | servicio-envios | 8086 | Despachos, MS nuevo a elección (`/shipments`, consume `pedido.creado`) |
+| authorizer-lambda/ | — | Lambda authorizer REQUEST del `backend-api` (serverless, no va en el compose) |
 
 ## Contratos MQ
 

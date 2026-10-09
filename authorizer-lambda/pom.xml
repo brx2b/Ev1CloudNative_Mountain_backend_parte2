@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>4.1.1</version>
+		<relativePath/>
+	</parent>
+
+	<groupId>com.lambda</groupId>
+	<artifactId>validador</artifactId>
+	<version>1.0.0</version>
+	<name>validador</name>
+	<description>Lambda authorizer (JWT) para Amazon API Gateway HTTP API</description>
+
+	<properties>
+		<java.version>21</java.version>
+		<spring-cloud-function.version>5.0.4</spring-cloud-function.version>
+		<aws-lambda-java-events.version>3.16.1</aws-lambda-java-events.version>
+		<aws-lambda-java-serialization.version>1.4.1</aws-lambda-java-serialization.version>
+		<aws-lambda-java-core.version>1.2.3</aws-lambda-java-core.version>
+		<!-- Spring Boot 4.1 ya no gestiona esta libreria, pero Spring Security la
+		     espera en 10.9.1. Subirla por debajo de la de Spring Security puede
+		     romper la validacion de firma en tiempo de ejecucion. -->
+		<nimbus-jose-jwt.version>10.9.1</nimbus-jose-jwt.version>
+
+		<!-- El parent POM de Spring Boot ya define los transformers del shade
+		     (fusion de .imports, services y manifiesto) y los usa como Main-Class.
+		     Spring Cloud Function llega a la Lambda por FunctionInvoker. -->
+		<start-class>org.springframework.cloud.function.adapter.aws.FunctionInvoker</start-class>
+	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-function-dependencies</artifactId>
+				<version>${spring-cloud-function.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<dependencies>
+		<!-- Sin spring-boot-starter-web: la Lambda no debe levantar un servidor. -->
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-function-context</artifactId>
+		</dependency>
+		<!-- El adaptador arrastra webflux y netty, que este authorizer no usa: solo
+		     necesita ejecutar una Function<Event, Result>. No se excluye el starter
+		     entero porque Spring Cloud Function registra beans contingentados con
+		     @ConditionalOnClass que dejan de aplicarse si falta la libreria y el
+		     contexto se queda a medio configurar. En su lugar se quitan solo los
+		     binarios nativos de Netty, que son peso muerto multiplataforma y una
+		     parte grande del tamano del paquete. -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-function-adapter-aws</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-codec-native-quic</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-transport-native-epoll</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-transport-classes-epoll</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-resolver-dns-native-macos</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>io.netty</groupId>
+					<artifactId>netty-resolver-dns-classes-macos</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<!-- Validacion de JWT: aporta JwtDecoder, NimbusJwtDecoder, JwtValidators
+		     y DelegatingOAuth2TokenValidator. No se arrastra todo Spring Security. -->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-oauth2-jose</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.nimbusds</groupId>
+			<artifactId>nimbus-jose-jwt</artifactId>
+			<version>${nimbus-jose-jwt.version}</version>
+		</dependency>
+
+		<!-- ESTAS TRES NO SON EQUIVALENTES Y NO SE TRATAN IGUAL:
+
+		     core y serialization van en "provided" porque el runtime de Lambda ya
+		     las carga en /var/runtime/lib. Empaquetarlas es lo que rompia el
+		     despliegue: /var/task se antepone a /var/runtime/lib en el classpath,
+		     asi que RequestStreamHandler se carga dos veces, desde el classloader
+		     de la aplicacion y desde el aislado del runtime. Son dos clases
+		     distintas, el runtime.no ve que AuthorizerHandler implemente SU
+		     RequestStreamHandler, no lo invoca, y arranca su propio bootstrap por
+		     Spring en su lugar. El sintoma era un 401 inmediato sin logs de esta
+		     aplicacion. AWS lo advierte en su documentacion de empaquetado.
+
+		     events si va en compile: ahi esta APIGatewayV2CustomAuthorizerEvent y
+		     el runtime NO la proporciona. -->
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-lambda-java-core</artifactId>
+			<version>${aws-lambda-java-core.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-lambda-java-events</artifactId>
+			<version>${aws-lambda-java-events.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-lambda-java-serialization</artifactId>
+			<version>${aws-lambda-java-serialization.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<finalName>${project.artifactId}</finalName>
+		<plugins>
+			<!-- Spring Cloud Function localiza la aplicacion Spring por el atributo
+			     "Start-Class" del manifiesto. maven-shade-plugin lo arrastra desde el
+			     JAR original, asi que se anade aqui en vez de en el transformer. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifestEntries>
+							<Start-Class>com.lambda.validador.ValidadorApplication</Start-Class>
+						</manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+
+			<!-- Se reactiva la ejecucion "default" que el parent POM ya define en
+			     su pluginManagement. No se redefinen los <transformers>: Maven fusiona
+			     esas listas por indice y al mezclarlos con clases distintas inyecta
+			     campos de un transformer en otro. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<configuration>
+					<createDependencyReducedPom>false</createDependencyReducedPom>
+					<!-- Nombre fijo en vez de "shadedArtifactAttached": al adjuntar el
+					     artefacto, Maven lo nombra artifactId-version-classifier.jar, y
+					     el CodeUri del template habria que tocarlo en cada cambio de
+					     version. -->
+					<outputFile>${project.build.directory}/function.jar</outputFile>
+				</configuration>
+				<executions>
+					<execution>
+						<id>default</id>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!-- No se declara spring-boot-maven-plugin: su goal "repackage", que el
+			     parent POM ya enlaza al ciclo "package", genera un JAR con las
+			     dependencias anidadas en BOOT-INF/lib. El runtime java21 gestionado
+			     de Lambda no entiende ese formato; el shaded de maven-shade-plugin
+			     si, porque deja las clases en la raiz. -->
+		</plugins>
+	</build>
+
+</project>
