@@ -19,7 +19,7 @@ import com.mountainbackend.notificaciones.servicio.ServicioNotificaciones;
 @Configuration
 public class ConsumidorNotificaciones {
 
-	public static final String COLA_PEDIDOS_CREADOS = "pedidos.creados";
+	public static final String COLA_NOTIFICACIONES = "pedidos.creados.notificaciones";
 
 	private static final Logger log = LoggerFactory.getLogger(ConsumidorNotificaciones.class);
 
@@ -42,16 +42,16 @@ public class ConsumidorNotificaciones {
 	}
 
 	@Bean
-	public Queue colaPedidosCreados() {
-		return new Queue(COLA_PEDIDOS_CREADOS, true);
+	public Queue colaNotificaciones() {
+		return new Queue(COLA_NOTIFICACIONES, true);
 	}
 
 	@Bean
-	public Binding bindingPedidosCreados(DirectExchange exchangePedidos, Queue colaPedidosCreados) {
-		return BindingBuilder.bind(colaPedidosCreados).to(exchangePedidos).with(routingKey);
+	public Binding bindingNotificaciones(DirectExchange exchangePedidos, Queue colaNotificaciones) {
+		return BindingBuilder.bind(colaNotificaciones).to(exchangePedidos).with(routingKey);
 	}
 
-	@RabbitListener(queues = COLA_PEDIDOS_CREADOS)
+	@RabbitListener(queues = COLA_NOTIFICACIONES)
 	public void alPedidoCreado(String json) {
 		try {
 			JsonNode evento = objectMapper.readTree(json);

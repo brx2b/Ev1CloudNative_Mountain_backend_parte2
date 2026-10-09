@@ -19,7 +19,7 @@ import com.mountainbackend.envios.servicio.ServicioEnvios;
 @Configuration
 public class ConsumidorEnvios {
 
-	public static final String COLA_PEDIDOS_CREADOS = "pedidos.creados";
+	public static final String COLA_ENVIOS = "pedidos.creados.envios";
 
 	private static final Logger log = LoggerFactory.getLogger(ConsumidorEnvios.class);
 
@@ -42,16 +42,16 @@ public class ConsumidorEnvios {
 	}
 
 	@Bean
-	public Queue colaPedidosCreados() {
-		return new Queue(COLA_PEDIDOS_CREADOS, true);
+	public Queue colaEnvios() {
+		return new Queue(COLA_ENVIOS, true);
 	}
 
 	@Bean
-	public Binding bindingPedidosCreados(DirectExchange exchangePedidos, Queue colaPedidosCreados) {
-		return BindingBuilder.bind(colaPedidosCreados).to(exchangePedidos).with(routingKey);
+	public Binding bindingEnvios(DirectExchange exchangePedidos, Queue colaEnvios) {
+		return BindingBuilder.bind(colaEnvios).to(exchangePedidos).with(routingKey);
 	}
 
-	@RabbitListener(queues = COLA_PEDIDOS_CREADOS)
+	@RabbitListener(queues = COLA_ENVIOS)
 	public void alPedidoCreado(String json) {
 		try {
 			JsonNode evento = objectMapper.readTree(json);
