@@ -8,10 +8,11 @@ Microservicios que corren en el EC2 backend-2 (`10.0.146.240`):
 | servicio-carrito | 8085 | Carrito persistente por usuario (`/cart`) |
 | servicio-envios | 8086 | Despachos, MS nuevo a elección (`/shipments`, consume `pedido.creado`) |
 
-## Contratos MQ
+## Contratos de mensajería
 
-Exchange duradero `pedidos.eventos`, routing key `pedido.creado`, cola `pedidos.creados`
-(broker RabbitMQ en backend-1, `RABBITMQ_HOST=10.0.128.111`):
+Topico Kafka `pedidos.creados`, clave = `orderId`
+(broker Kafka en backend-3, `KAFKA_BOOTSTRAP_SERVERS=10.0.1.13:29092`;
+cada servicio consume con su propio groupId):
 
 ```json
 {"orderId":"PEDIDO-100001","customerEmail":"a@b.cl","customerName":"Ana",

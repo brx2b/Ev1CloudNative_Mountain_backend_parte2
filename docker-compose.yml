@@ -1,7 +1,7 @@
 version: "3.9"
 
-# Backend-2 (EC2 10.0.146.240): notificaciones, carrito y envíos.
-# Consumen RabbitMQ del backend-1 (RABBITMQ_HOST=10.0.128.111).
+# Backend-2 (EC2 10.0.1.12): notificaciones, carrito y envíos.
+# Consumen Kafka de backend-3 (KAFKA_BOOTSTRAP_SERVERS=10.0.1.13:29092).
 # Puertos (cada MS escucha en 8080 dentro de su contenedor):
 #   8084 -> servicio-notificaciones
 #   8085 -> servicio-carrito
@@ -37,10 +37,8 @@ services:
       JWT_LOCAL_ISSUER: "pedidos360-usuarios"
       JWT_LOCAL_AUDIENCE: "pedidos360-api"
       JWT_LOCAL_REQUIRED_SCOPE: "orders.write"
-      RABBITMQ_HOST: "${RABBITMQ_HOST:-10.0.128.111}"
-      RABBITMQ_PORT: "5672"
-      RABBITMQ_USER: "${RABBITMQ_USER:-pedidos360}"
-      RABBITMQ_PASS: "${RABBITMQ_PASS:-cambiar-en-produccion}"
+      # Kafka en backend-3 (listener EXTERNAL). En AWS: KAFKA_BOOTSTRAP_SERVERS=10.0.1.13:29092
+      KAFKA_BOOTSTRAP_SERVERS: "${KAFKA_BOOTSTRAP_SERVERS:-10.0.1.13:29092}"
       SMTP_HOST: "${SMTP_HOST:-}"
       SMTP_PORT: "${SMTP_PORT:-587}"
       SMTP_USER: "${SMTP_USER:-}"
@@ -74,10 +72,8 @@ services:
       JWT_LOCAL_ISSUER: "pedidos360-usuarios"
       JWT_LOCAL_AUDIENCE: "pedidos360-api"
       JWT_LOCAL_REQUIRED_SCOPE: "orders.write"
-      RABBITMQ_HOST: "${RABBITMQ_HOST:-10.0.128.111}"
-      RABBITMQ_PORT: "5672"
-      RABBITMQ_USER: "${RABBITMQ_USER:-pedidos360}"
-      RABBITMQ_PASS: "${RABBITMQ_PASS:-cambiar-en-produccion}"
+      # Kafka en backend-3 (listener EXTERNAL). En AWS: KAFKA_BOOTSTRAP_SERVERS=10.0.1.13:29092
+      KAFKA_BOOTSTRAP_SERVERS: "${KAFKA_BOOTSTRAP_SERVERS:-10.0.1.13:29092}"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
       interval: 10s
@@ -106,10 +102,8 @@ services:
       JWT_LOCAL_ISSUER: "pedidos360-usuarios"
       JWT_LOCAL_AUDIENCE: "pedidos360-api"
       JWT_LOCAL_REQUIRED_SCOPE: "orders.write"
-      RABBITMQ_HOST: "${RABBITMQ_HOST:-10.0.128.111}"
-      RABBITMQ_PORT: "5672"
-      RABBITMQ_USER: "${RABBITMQ_USER:-pedidos360}"
-      RABBITMQ_PASS: "${RABBITMQ_PASS:-cambiar-en-produccion}"
+      # Kafka en backend-3 (listener EXTERNAL). En AWS: KAFKA_BOOTSTRAP_SERVERS=10.0.1.13:29092
+      KAFKA_BOOTSTRAP_SERVERS: "${KAFKA_BOOTSTRAP_SERVERS:-10.0.1.13:29092}"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
       interval: 10s
